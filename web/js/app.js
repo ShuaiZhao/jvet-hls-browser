@@ -523,17 +523,10 @@ function displaySemantics(paramName, pushToHistory = true) {
         }
     }
 
-    // Try searching in other parameters' definitions or related parameters
+    // Try searching in related parameters only (removed "mentioned in definition" check as it's too broad)
     if (!info) {
-        // Search for parameters where this param is mentioned in definition or related_parameters
+        // Search for parameters where this param is in related_parameters array
         for (const [key, value] of Object.entries(semanticsData)) {
-            // Check if mentioned in definition
-            if (value.definition && value.definition.toLowerCase().includes(paramName.toLowerCase())) {
-                info = value;
-                matchType = 'mentioned';
-                displayName = key + ' (mentions ' + paramName + ')';
-                break;
-            }
             // Check if in related parameters
             if (value.related_parameters && value.related_parameters.includes(paramName)) {
                 info = value;
@@ -587,20 +580,13 @@ function displaySemantics(paramName, pushToHistory = true) {
         return;
     }
 
-    modalTitle.textContent = matchType === 'mentioned' || matchType === 'related' ? paramName : displayName;
+    modalTitle.textContent = matchType === 'related' ? paramName : displayName;
 
     let html = `
         <div class="semantic-content">`;
 
-    // Add note if found through related/mentioned match
-    if (matchType === 'mentioned') {
-        html += `
-            <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 4px;">
-                <small style="color: #856404;"><i class="fas fa-info-circle"></i> <strong>Note:</strong>
-                The semantics for <code>${paramName}</code> are documented under <code>${displayName.split(' (')[0]}</code></small>
-            </div>
-        `;
-    } else if (matchType === 'related') {
+    // Add note if found through related match
+    if (matchType === 'related') {
         html += `
             <div style="background: #d1ecf1; border-left: 4px solid #17a2b8; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 4px;">
                 <small style="color: #0c5460;"><i class="fas fa-link"></i> <strong>Note:</strong>
@@ -738,17 +724,21 @@ function navigateToSyntaxStructure(funcName) {
     // Try to find matching syntax structure
     // First try exact match
     let matchedStructure = null;
+    let matchedKey = null;
 
-    for (const structure of syntaxData) {
+    // Iterate over object values
+    for (const [key, structure] of Object.entries(syntaxData)) {
         // Try exact match
-        if (structure.name === funcName) {
+        if (structure.name === funcName || key === funcName) {
             matchedStructure = structure;
+            matchedKey = key;
             break;
         }
 
         // Try with parentheses
-        if (structure.name === funcName + '()') {
+        if (structure.name === funcName + '()' || key === funcName + '()') {
             matchedStructure = structure;
+            matchedKey = key;
             break;
         }
 
@@ -756,26 +746,29 @@ function navigateToSyntaxStructure(funcName) {
         const funcWithSpaces = funcName.replace(/_/g, ' ');
         const funcWithUnderscores = funcName.replace(/ /g, '_');
 
-        if (structure.name === funcWithSpaces || structure.name === funcWithUnderscores) {
+        if (structure.name === funcWithSpaces || structure.name === funcWithUnderscores ||
+            key === funcWithSpaces || key === funcWithUnderscores) {
             matchedStructure = structure;
+            matchedKey = key;
             break;
         }
 
         // Try case-insensitive match
-        if (structure.name.toLowerCase() === funcName.toLowerCase()) {
+        if (structure.name && structure.name.toLowerCase() === funcName.toLowerCase()) {
             matchedStructure = structure;
+            matchedKey = key;
             break;
         }
     }
 
-    if (matchedStructure) {
-        // Display the syntax structure
-        selectSyntaxStructure(matchedStructure.name);
+    if (matchedStructure && matchedKey) {
+        // Display the syntax structure using the key
+        selectSyntaxStructure(matchedKey);
 
         // Highlight in sidebar and scroll to it
         const syntaxItems = document.querySelectorAll('.syntax-item');
         syntaxItems.forEach(item => {
-            if (item.textContent.trim() === matchedStructure.name) {
+            if (item.textContent.trim() === matchedStructure.name || item.textContent.trim() === matchedKey) {
                 item.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
         });
@@ -1142,4 +1135,160 @@ function showError(message) {
             <p>${message}</p>
         </div>
     `;
+}
+
+/**
+ * AI Analysis functions
+ */
+let currentAiParameter = null;
+
+function getApiKey() {
+    // Check if API key is stored in sessionStorage
+    let apiKey = sessionStorage.getItem('claudeApiKey');
+
+    if (!apiKey) {
+        // Prompt user for API key
+        apiKey = prompt('Please enter your Claude API key (starts with sk-ant-...):\n\nYour key will be stored for this session only and never sent to any server except Anthropic\'s API.');
+
+        if (apiKey && apiKey.startsWith('sk-ant-')) {
+            sessionStorage.setItem('claudeApiKey', apiKey);
+        } else {
+            return null;
+        }
+    }
+
+    return apiKey;
+}
+
+async function aiExplainParameter() {
+    const paramName = document.getElementById('semanticsModalTitle').textContent;
+
+    if (!paramName || paramName === 'Semantics') {
+        alert('Please select a parameter first');
+        return;
+    }
+
+    currentAiParameter = paramName;
+
+    // Get API key
+    const apiKey = getApiKey();
+    if (!apiKey) {
+        alert('Valid Claude API key is required for AI analysis');
+        return;
+    }
+
+    // Show AI analysis container with loading state
+    const aiContainer = document.getElementById('aiAnalysisContainer');
+    const aiContent = document.getElementById('aiAnalysisContent');
+
+    aiContainer.style.display = 'block';
+    aiContent.innerHTML = '<div class="ai-analysis-loading"><i class="fas fa-robot fa-spin"></i><p>Analyzing parameter...</p></div>';
+
+    // Scroll to AI analysis
+    aiContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+    try {
+        // Get parameter semantics and syntax context
+        const semantics = semanticsData[paramName] || {};
+        const definition = semantics.definition || 'No definition available';
+        const constraints = semantics.constraints || [];
+        const relatedParams = semantics.related_parameters || [];
+
+        // Find syntax structure containing this parameter
+        let syntaxContext = '';
+        for (const [structName, struct] of Object.entries(syntaxData)) {
+            if (struct.parameters && struct.parameters.some(p =>
+                typeof p === 'object' && p.name && p.name.includes(paramName))) {
+                syntaxContext = structName;
+                break;
+            }
+        }
+
+        // Build prompt for Claude
+        const prompt = `You are an expert in H.266/VVC video codec specification. Please provide a clear, easy-to-understand explanation of the following parameter for someone learning about VVC.
+
+Parameter: ${paramName}
+
+Specification Definition: ${definition}
+
+Constraints: ${constraints.length > 0 ? constraints.join(', ') : 'None specified'}
+
+Related Parameters: ${relatedParams.length > 0 ? relatedParams.join(', ') : 'None specified'}
+
+${syntaxContext ? `Syntax Context: ${syntaxContext}` : ''}
+
+Please explain:
+1. What this parameter does in simple terms
+2. When and why it's used in video encoding/decoding
+3. Its practical impact on video quality or bitstream
+4. How it relates to other VVC features (if applicable)
+
+Keep the explanation concise (3-5 paragraphs) and accessible.`;
+
+        // Call Claude API
+        const response = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-api-key': apiKey,
+                'anthropic-version': '2023-06-01'
+            },
+            body: JSON.stringify({
+                model: 'claude-3-5-sonnet-20241022',
+                max_tokens: 1024,
+                messages: [{
+                    role: 'user',
+                    content: prompt
+                }]
+            })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error?.message || `API error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        const explanation = data.content[0].text;
+
+        // Display the AI analysis
+        displayAiAnalysis(explanation);
+
+    } catch (error) {
+        console.error('AI analysis error:', error);
+        aiContent.innerHTML = `
+            <div class="ai-analysis-error">
+                <strong>Error:</strong> ${error.message}
+                <br><br>
+                <small>Please check your API key and internet connection.</small>
+            </div>
+        `;
+    }
+}
+
+function displayAiAnalysis(explanation) {
+    const aiContent = document.getElementById('aiAnalysisContent');
+
+    // Convert markdown-style formatting to HTML
+    let html = explanation
+        .replace(/\n\n/g, '</p><p>')
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+        .replace(/`(.*?)`/g, '<code>$1</code>');
+
+    // Wrap in paragraph tags if not already
+    if (!html.startsWith('<p>')) {
+        html = '<p>' + html + '</p>';
+    }
+
+    // Handle numbered lists
+    html = html.replace(/(\d+)\.\s+/g, '<br>$1. ');
+
+    aiContent.innerHTML = html;
+}
+
+function closeAiAnalysis() {
+    const aiContainer = document.getElementById('aiAnalysisContainer');
+    aiContainer.style.display = 'none';
+    currentAiParameter = null;
 }
