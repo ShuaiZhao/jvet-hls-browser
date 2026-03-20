@@ -1,0 +1,32 @@
+# Core dependencies
+python-docx>=1.1.0
+pyyaml>=6.0.1
+
+# AI/LLM providers (choose based on preference)
+openai>=1.12.0        # For embeddings and/or chat
+anthropic>=0.18.0     # For Claude analysis (recommended)
+
+# Text processing
+beautifulsoup4>=4.12.0
+lxml>=5.1.0
+nltk>=3.8.0
+
+# Data handling
+numpy>=1.26.0
+pandas>=2.2.0
+
+# Embeddings and similarity
+scikit-learn>=1.4.0
+
+# Progress bars
+tqdm>=4.66.0
+
+# Command-line interface
+click>=8.1.7
+
+# Testing (optional)
+pytest>=8.0.0
+
+# Web backend for real-time Claude analysis
+flask>=3.0.0
+flask-cors>=4.0.0

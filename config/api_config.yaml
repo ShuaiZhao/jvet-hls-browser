@@ -1,0 +1,36 @@
+# API Configuration for LLM and Embeddings
+
+# Choose LLM provider for analysis: 'openai' or 'anthropic'
+llm_provider: 'anthropic'
+
+# LLM settings
+openai:
+  chat_model: 'gpt-4o-mini'
+  temperature: 0.3
+
+anthropic:
+  chat_model: 'claude-sonnet-4-5-20250929'
+  temperature: 0.3
+  max_tokens: 4000
+
+# Choose embeddings provider: 'openai', 'cohere', 'voyageai'
+embeddings_provider: 'openai'
+
+# Embeddings settings
+openai_embeddings:
+  model: 'text-embedding-3-small'
+  dimension: 1536
+
+cohere_embeddings:
+  model: 'embed-english-v3.0'
+  dimension: 1024
+
+voyageai_embeddings:
+  model: 'voyage-2'
+  dimension: 1024
+
+# Hybrid approach: Use Claude for analysis, OpenAI for embeddings
+# This combines the best of both:
+# - Claude's superior reasoning for relationship analysis
+# - OpenAI's embeddings for semantic similarity
+hybrid_mode: true

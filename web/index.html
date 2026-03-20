@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive HLS Specification Browser</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        // Check authentication
+        if (sessionStorage.getItem('hlsAuthenticated') !== 'true') {
+            window.location.href = 'login.html';
+        }
+    </script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-content">
+                <h1><i class="fas fa-video"></i> Interactive HLS Specification Browser</h1>
+                <div class="codec-selector">
+                    <select id="codecSelect">
+                        <option value="vvc">VVC/H.266</option>
+                        <option value="hevc">HEVC/H.265</option>
+                        <option value="avc">AVC/H.264</option>
+                    </select>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Left Sidebar: Syntax Navigator -->
+            <aside class="sidebar" id="sidebar">
+                <div class="sidebar-header">
+                    <h2><i class="fas fa-list"></i> Syntax Structures</h2>
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="syntaxSearch" placeholder="Search syntax...">
+                    </div>
+                </div>
+                <div class="syntax-list" id="syntaxList">
+                    <div class="loading"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
+                </div>
+                <div class="resize-handle resize-handle-right"></div>
+            </aside>
+
+            <!-- Center Panel: Syntax Display -->
+            <main class="syntax-display">
+                <div class="syntax-header">
+                    <h2 id="syntaxTitle">Select a syntax structure</h2>
+                    <span class="syntax-section" id="syntaxSection"></span>
+                </div>
+                <div class="syntax-content" id="syntaxContent">
+                    <div class="welcome-message">
+                        <i class="fas fa-hand-pointer"></i>
+                        <p>Click on a syntax structure from the left panel to view its details</p>
+                    </div>
+                </div>
+            </main>
+
+            <!-- Right Panel: Semantics & Connections -->
+            <aside class="details-panel" id="detailsPanel">
+                <div class="resize-handle resize-handle-left"></div>
+                <div class="panel-tabs">
+                    <button class="tab-btn active" data-tab="semantics">
+                        <i class="fas fa-book"></i> Semantics
+                    </button>
+                    <button class="tab-btn" data-tab="connections">
+                        <i class="fas fa-project-diagram"></i> Connections
+                    </button>
+                </div>
+
+                <div class="tab-content active" id="semanticsTab">
+                    <div class="empty-state">
+                        <i class="fas fa-info-circle"></i>
+                        <p>Click on a parameter to view its semantics</p>
+                    </div>
+                </div>
+
+                <div class="tab-content" id="connectionsTab">
+                    <div class="empty-state">
+                        <i class="fas fa-info-circle"></i>
+                        <p>Click on a parameter to view its connections</p>
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </div>
+
+    <!-- Connection Graph Modal (D3.js visualization) -->
+    <div class="modal" id="graphModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-project-diagram"></i> Connection Graph</h2>
+                <button class="close-btn" onclick="closeGraphModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="connectionGraph"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Connection Tree Modal (Interactive Tree) -->
+    <div class="modal" id="connectionTreeModal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2><i class="fas fa-sitemap"></i> <span id="treeModalTitle">Connection Tree</span></h2>
+                <div class="modal-header-actions">
+                    <button class="icon-btn" onclick="expandAllConnections()" title="Expand All">
+                        <i class="fas fa-plus-square"></i>
+                    </button>
+                    <button class="icon-btn" onclick="collapseAllConnections()" title="Collapse All">
+                        <i class="fas fa-minus-square"></i>
+                    </button>
+                    <button class="close-btn" onclick="closeConnectionTree()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="modal-body">
+                <div id="connectionTreeContainer" class="connection-tree-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Semantics Popup Modal -->
+    <div class="modal" id="semanticsModal">
+        <div class="modal-content modal-compact">
+            <div class="modal-header">
+                <h2><i class="fas fa-book"></i> <span id="semanticsModalTitle">Semantics</span></h2>
+                <div class="modal-header-actions">
+                    <button class="icon-btn" id="semanticsBackBtn" onclick="goBackSemantics()" title="Go Back" style="display: none;">
+                        <i class="fas fa-arrow-left"></i>
+                    </button>
+                    <button class="close-btn" onclick="closeSemanticsModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="modal-body">
+                <div id="semanticsModalContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="js/connection-tree.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

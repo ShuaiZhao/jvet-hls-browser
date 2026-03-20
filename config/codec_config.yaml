@@ -1,0 +1,126 @@
+# Codec-specific configuration for HLS specification parsing
+
+vvc:
+  name: "VVC/H.266"
+  full_name: "Versatile Video Coding"
+  spec_file: "../H266_VVC/H266-VVC-v3.docx"
+
+  # Section numbers for syntax and semantics
+  syntax_section: "7.3"  # Will search 7.3.2, 7.3.4, 7.3.5, ... 7.3.11
+  syntax_subsections: ["7.3.2", "7.3.4", "7.3.5", "7.3.6", "7.3.7", "7.3.8", "7.3.9", "7.3.10", "7.3.11"]
+  semantics_section: "7.4"
+
+  # Key syntax structures to extract (Section 7.3 subsections)
+  key_structures:
+    - "video_parameter_set_rbsp"
+    - "seq_parameter_set_rbsp"
+    - "pic_parameter_set_rbsp"
+    - "adaptation_parameter_set_rbsp"
+    - "picture_header_rbsp"
+    - "slice_header"
+    - "ref_pic_list_struct"
+    - "nal_unit_header"
+
+  # Parsing patterns
+  patterns:
+    syntax_descriptor_regex: '(\w+)\(\s*\)\s*\{'
+    parameter_regex: '(\w+)\s+(ue\(v\)|u\(\d+\)|se\(v\)|i\(\d+\)|f\(\d+\))'
+    condition_regex: 'if\s*\((.*?)\)'
+
+  # Output settings
+  output_dir: "data/vvc"
+  web_config:
+    title: "VVC/H.266 Interactive Specification"
+    color_scheme: "#4A90E2"
+
+hevc:
+  name: "HEVC/H.265"
+  full_name: "High Efficiency Video Coding"
+  spec_file: "../H265_HEVC/T-REC-H.265-202407-I!!MSW-E.docx"
+
+  syntax_section: "7.3"
+  semantics_section: "7.4"
+
+  key_structures:
+    - "video_parameter_set_rbsp"
+    - "seq_parameter_set_rbsp"
+    - "pic_parameter_set_rbsp"
+    - "slice_segment_header"
+    - "ref_pic_lists_modification"
+    - "nal_unit_header"
+
+  patterns:
+    syntax_descriptor_regex: '(\w+)\(\s*\)\s*\{'
+    parameter_regex: '(\w+)\s+(ue\(v\)|u\(\d+\)|se\(v\)|i\(\d+\))'
+    condition_regex: 'if\s*\((.*?)\)'
+
+  output_dir: "data/hevc"
+  web_config:
+    title: "HEVC/H.265 Interactive Specification"
+    color_scheme: "#E27D60"
+
+avc:
+  name: "AVC/H.264"
+  full_name: "Advanced Video Coding"
+  spec_file: "../H264_AVC/T-REC-H.264-202408-I!!MSW-E.docx"
+
+  syntax_section: "7.3"
+  semantics_section: "7.4"
+
+  key_structures:
+    - "seq_parameter_set_rbsp"
+    - "pic_parameter_set_rbsp"
+    - "slice_header"
+    - "ref_pic_list_modification"
+    - "dec_ref_pic_marking"
+    - "nal_unit_header"
+
+  patterns:
+    syntax_descriptor_regex: '(\w+)\(\s*\)\s*\{'
+    parameter_regex: '(\w+)\s+(ue\(v\)|u\(\d+\)|se\(v\)|i\(\d+\))'
+    condition_regex: 'if\s*\((.*?)\)'
+
+  output_dir: "data/avc"
+  web_config:
+    title: "AVC/H.264 Interactive Specification"
+    color_scheme: "#85C7B3"
+
+# AI Configuration
+ai:
+  embedding_model: "text-embedding-3-small"
+  embedding_dimension: 1536
+  similarity_threshold: 0.75
+  connection_strength_thresholds:
+    strong: 0.90
+    medium: 0.75
+    weak: 0.60
+
+# Connection detection patterns
+connection_patterns:
+  # Direct reference patterns
+  reference_keywords:
+    - "shall be equal to"
+    - "refers to"
+    - "references"
+    - "identifies the"
+    - "specifies the"
+
+  # Dependency patterns
+  dependency_keywords:
+    - "depends on"
+    - "is derived from"
+    - "is calculated from"
+    - "is set equal to"
+
+  # Conditional patterns
+  conditional_keywords:
+    - "when"
+    - "if"
+    - "unless"
+    - "only when"
+
+  # Mutual exclusion patterns
+  exclusion_keywords:
+    - "shall not be present"
+    - "mutually exclusive"
+    - "either ... or"
