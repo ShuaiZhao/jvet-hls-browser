@@ -460,8 +460,8 @@ function selectParameter(paramName) {
     // Display connections
     displayConnections(paramName);
 
-    // Switch to semantics tab
-    switchTab('semantics');
+    // Switch to connections tab (semantics tab was removed)
+    switchTab('connections');
 }
 
 /**
@@ -801,128 +801,8 @@ function navigateToSyntaxStructure(funcName) {
 }
 
 /**
- * Display parameter connections
+ * displayConnections function is now in connection-graph.js
  */
-function displayConnections(paramName) {
-    const container = document.getElementById('connectionsTab');
-
-    // Check if connections data exists at all
-    if (!connectionsData || Object.keys(connectionsData).length === 0) {
-        container.innerHTML = `
-            <div class="empty-state">
-                <i class="fas fa-project-diagram" style="font-size: 2.5rem; margin-bottom: 1rem; opacity: 0.5;"></i>
-                <p><strong>Connection Analysis Not Generated</strong></p>
-                <p style="margin-top: 1rem; font-size: 0.9rem; color: #6c757d; line-height: 1.6;">
-                    Parameter connections are discovered using AI analysis with Claude API.
-                    This feature maps relationships between syntax elements, including:
-                </p>
-                <ul style="text-align: left; margin: 1rem auto; max-width: 400px; color: #6c757d; font-size: 0.85rem;">
-                    <li><i class="fas fa-arrow-right" style="color: #667eea;"></i> Direct references</li>
-                    <li><i class="fas fa-project-diagram" style="color: #e83e8c;"></i> Dependencies</li>
-                    <li><i class="fas fa-sitemap" style="color: #7b1fa2;"></i> Related concepts</li>
-                </ul>
-                <div style="margin-top: 1.5rem; padding: 1rem; background: #f8f9fa; border-radius: 6px; border-left: 3px solid #667eea;">
-                    <p style="font-size: 0.85rem; color: #495057; margin-bottom: 0.5rem;">
-                        <i class="fas fa-terminal"></i> <strong>To generate connections:</strong>
-                    </p>
-                    <code style="background: #fff; padding: 0.75rem; display: block; border-radius: 4px; font-size: 0.8rem; color: #333;">
-                    export ANTHROPIC_API_KEY="your-api-key"<br>
-                    python scripts/generate_connections_simple.py --codec vvc
-                    </code>
-                    <p style="margin-top: 0.5rem; font-size: 0.75rem; color: #6c757d;">
-                        <i class="fas fa-info-circle"></i> Estimated time: 30-60 minutes • Cost: ~$2-5
-                    </p>
-                </div>
-            </div>
-        `;
-        return;
-    }
-
-    const connections = connectionsData[paramName];
-
-    if (!connections) {
-        container.innerHTML = `
-            <div class="empty-state">
-                <i class="fas fa-info-circle"></i>
-                <p>No connection data available for this parameter.</p>
-            </div>
-        `;
-        return;
-    }
-
-    let html = '<div class="connection-content">';
-
-    // References
-    if (connections.references && connections.references.length > 0) {
-        html += `
-            <div class="connection-section">
-                <h4><i class="fas fa-arrow-right"></i> References</h4>
-        `;
-        connections.references.forEach(ref => {
-            html += `
-                <div class="connection-item" onclick="selectParameter('${ref.parameter}')">
-                    <div class="connection-param">
-                        ${ref.parameter}
-                        <span class="connection-strength">${Math.round(ref.strength * 100)}%</span>
-                    </div>
-                    <div class="connection-context">${ref.context}</div>
-                </div>
-            `;
-        });
-        html += `</div>`;
-    }
-
-    // Dependencies
-    if (connections.dependencies && connections.dependencies.length > 0) {
-        html += `
-            <div class="connection-section">
-                <h4><i class="fas fa-project-diagram"></i> Dependencies</h4>
-        `;
-        connections.dependencies.forEach(dep => {
-            html += `
-                <div class="connection-item" onclick="selectParameter('${dep.parameter}')">
-                    <div class="connection-param">
-                        ${dep.parameter}
-                        <span class="connection-strength">${Math.round(dep.strength * 100)}%</span>
-                    </div>
-                    <div class="connection-context">${dep.context}</div>
-                </div>
-            `;
-        });
-        html += `</div>`;
-    }
-
-    // Related concepts
-    if (connections.related_concepts && connections.related_concepts.length > 0) {
-        html += `
-            <div class="connection-section">
-                <h4><i class="fas fa-sitemap"></i> Related Concepts</h4>
-        `;
-        connections.related_concepts.forEach(rel => {
-            html += `
-                <div class="connection-item" onclick="selectParameter('${rel.parameter}')">
-                    <div class="connection-param">
-                        ${rel.parameter}
-                        <span class="connection-strength">${Math.round(rel.strength * 100)}%</span>
-                    </div>
-                    <div class="connection-context">${rel.context}</div>
-                </div>
-            `;
-        });
-        html += `</div>`;
-    }
-
-    // Add view tree button
-    html += `
-        <button class="view-graph-btn" onclick="showConnectionTree('${paramName}')">
-            <i class="fas fa-sitemap"></i> View Full Connection Tree
-        </button>
-    `;
-
-    html += '</div>';
-
-    container.innerHTML = html;
-}
 
 /**
  * Switch between tabs

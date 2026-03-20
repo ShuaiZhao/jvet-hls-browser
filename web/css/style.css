@@ -1037,6 +1037,186 @@ body {
     border-left: 4px solid #dc3545;
 }
 
+/* Connection Graph Styles */
+.connections-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    border-bottom: 1px solid #e0e0e0;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.connections-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+}
+
+.btn-view-graph {
+    padding: 0.5rem 1rem;
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
+    color: white;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.3s;
+}
+
+.btn-view-graph:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: translateY(-2px);
+}
+
+.connections-content {
+    padding: 1rem;
+    overflow-y: auto;
+    max-height: calc(100vh - 200px);
+}
+
+.connection-section {
+    margin-bottom: 2rem;
+}
+
+.connection-section h4 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1rem;
+    color: #667eea;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.section-desc {
+    font-size: 0.85rem;
+    color: #666;
+    margin: 0 0 1rem 0;
+}
+
+.connection-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.connection-item {
+    padding: 0.75rem;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border-left: 4px solid #667eea;
+    transition: all 0.3s;
+}
+
+.connection-item:hover {
+    background: #e9ecef;
+    transform: translateX(4px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.connection-item.strength-high {
+    border-left-color: #28a745;
+}
+
+.connection-item.strength-medium {
+    border-left-color: #ffc107;
+}
+
+.connection-item.strength-low {
+    border-left-color: #6c757d;
+}
+
+.connection-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.connection-param {
+    font-weight: 600;
+    color: #667eea;
+}
+
+.clickable-param {
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+.clickable-param:hover {
+    color: #764ba2;
+}
+
+.connection-strength {
+    font-size: 0.9rem;
+    color: #28a745;
+}
+
+.connection-context {
+    font-size: 0.85rem;
+    color: #555;
+    line-height: 1.4;
+}
+
+.connections-loading {
+    text-align: center;
+    padding: 2rem;
+    color: #667eea;
+}
+
+.connections-loading i {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+/* D3 Graph Styles */
+.connection-graph-svg {
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.link {
+    stroke-opacity: 0.6;
+}
+
+.link-dependency {
+    stroke: #667eea;
+}
+
+.link-reference {
+    stroke: #f093fb;
+}
+
+.link-related {
+    stroke: #4facfe;
+}
+
+.node {
+    cursor: pointer;
+}
+
+.node circle {
+    stroke: #fff;
+    stroke-width: 2px;
+    transition: all 0.3s;
+}
+
+.node:hover circle {
+    stroke-width: 3px;
+    filter: brightness(1.1);
+}
+
+.node-root circle {
+    stroke-width: 3px;
+}
+
+.node-label {
+    fill: #333;
+    font-family: 'Segoe UI', sans-serif;
+    pointer-events: none;
+    user-select: none;
+}
+
 /* Responsive Design */
 @media (max-width: 1200px) {
     .main-content {
