@@ -35,3 +35,6 @@ Thumbs.db
 # Checkpoints
 *_checkpoint.json
 RESTART_GUIDE.txt
+
+# Local config with API keys
+web/config.json

@@ -1142,12 +1142,29 @@ function showError(message) {
  */
 let currentAiParameter = null;
 
-function getApiKey() {
+async function getApiKey() {
     // Check if API key is stored in sessionStorage
     let apiKey = sessionStorage.getItem('claudeApiKey');
 
     if (!apiKey) {
-        // Prompt user for API key
+        // Try to fetch from local config file first (for local development)
+        try {
+            const configResponse = await fetch('config.json');
+            if (configResponse.ok) {
+                const config = await configResponse.json();
+                apiKey = config.ANTHROPIC_API_KEY;
+                if (apiKey && apiKey.startsWith('sk-ant-')) {
+                    sessionStorage.setItem('claudeApiKey', apiKey);
+                    console.log('Using API key from config.json');
+                    return apiKey;
+                }
+            }
+        } catch (e) {
+            // Config file doesn't exist (GitHub Pages deployment) - continue to prompt
+            console.log('No config.json found, prompting for API key');
+        }
+
+        // Prompt user for API key (for GitHub Pages deployment)
         apiKey = prompt('Please enter your Claude API key (starts with sk-ant-...):\n\nYour key will be stored for this session only and never sent to any server except Anthropic\'s API.');
 
         if (apiKey && apiKey.startsWith('sk-ant-')) {
@@ -1171,7 +1188,7 @@ async function aiExplainParameter() {
     currentAiParameter = paramName;
 
     // Get API key
-    const apiKey = getApiKey();
+    const apiKey = await getApiKey();
     if (!apiKey) {
         alert('Valid Claude API key is required for AI analysis');
         return;
