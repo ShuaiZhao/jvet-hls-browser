@@ -450,18 +450,13 @@ function highlightCondition(text) {
 
 /**
  * Select and display parameter details
+ * Connections are now shown inline in the semantics modal
  */
 function selectParameter(paramName) {
     currentParameter = paramName;
 
-    // Display semantics
+    // Display semantics (connections are automatically added inside)
     displaySemantics(paramName);
-
-    // Display connections
-    displayConnections(paramName);
-
-    // Switch to connections tab (semantics tab was removed)
-    switchTab('connections');
 }
 
 /**
@@ -678,6 +673,9 @@ function displaySemantics(paramName, pushToHistory = true) {
 
     modalContent.innerHTML = html;
 
+    // Add connections visualization below semantics (async)
+    addConnectionsToModal(paramName);
+
     // Update back button visibility
     const backBtn = document.getElementById('semanticsBackBtn');
     if (backBtn) {
@@ -685,6 +683,113 @@ function displaySemantics(paramName, pushToHistory = true) {
     }
 
     modal.classList.add('active');
+}
+
+/**
+ * Add connections visualization to semantics modal
+ */
+async function addConnectionsToModal(paramName) {
+    const modalContent = document.getElementById('semanticsModalContent');
+
+    // Load connections data from the connection-graph.js module
+    await loadConnectionsData();
+
+    if (!connectionsData || !connectionsData[paramName]) {
+        // No connections available
+        return;
+    }
+
+    const connections = connectionsData[paramName];
+
+    let connectionsHTML = `
+        <div class="semantic-connections">
+            <div class="connections-header-inline">
+                <h4><i class="fas fa-project-diagram"></i> Parameter Connections</h4>
+                <button class="btn-view-graph-inline" onclick="showConnectionGraph('${paramName}')">
+                    <i class="fas fa-share-alt"></i> View Graph
+                </button>
+            </div>
+    `;
+
+    // Dependencies
+    if (connections.dependencies && connections.dependencies.length > 0) {
+        connectionsHTML += `
+            <div class="connection-section-inline">
+                <h5><i class="fas fa-arrow-left"></i> Dependencies (${connections.dependencies.length})</h5>
+                <div class="connection-list-inline">
+        `;
+        connections.dependencies
+            .sort((a, b) => b.strength - a.strength)
+            .slice(0, 5)  // Show top 5
+            .forEach(conn => {
+                const strengthClass = conn.strength >= 0.8 ? 'strength-high' : conn.strength >= 0.5 ? 'strength-medium' : 'strength-low';
+                connectionsHTML += `
+                    <div class="connection-item-inline ${strengthClass}">
+                        <span class="connection-param-clickable" onclick="displaySemantics('${conn.parameter}', true)">${conn.parameter}</span>
+                        <span class="connection-strength-badge">${(conn.strength * 100).toFixed(0)}%</span>
+                    </div>
+                `;
+            });
+        if (connections.dependencies.length > 5) {
+            connectionsHTML += `<div class="connection-more">+${connections.dependencies.length - 5} more</div>`;
+        }
+        connectionsHTML += `</div></div>`;
+    }
+
+    // References
+    if (connections.references && connections.references.length > 0) {
+        connectionsHTML += `
+            <div class="connection-section-inline">
+                <h5><i class="fas fa-arrow-right"></i> References (${connections.references.length})</h5>
+                <div class="connection-list-inline">
+        `;
+        connections.references
+            .sort((a, b) => b.strength - a.strength)
+            .slice(0, 5)  // Show top 5
+            .forEach(conn => {
+                const strengthClass = conn.strength >= 0.8 ? 'strength-high' : conn.strength >= 0.5 ? 'strength-medium' : 'strength-low';
+                connectionsHTML += `
+                    <div class="connection-item-inline ${strengthClass}">
+                        <span class="connection-param-clickable" onclick="displaySemantics('${conn.parameter}', true)">${conn.parameter}</span>
+                        <span class="connection-strength-badge">${(conn.strength * 100).toFixed(0)}%</span>
+                    </div>
+                `;
+            });
+        if (connections.references.length > 5) {
+            connectionsHTML += `<div class="connection-more">+${connections.references.length - 5} more</div>`;
+        }
+        connectionsHTML += `</div></div>`;
+    }
+
+    // Related Concepts
+    if (connections.related_concepts && connections.related_concepts.length > 0) {
+        connectionsHTML += `
+            <div class="connection-section-inline">
+                <h5><i class="fas fa-link"></i> Related Concepts (${connections.related_concepts.length})</h5>
+                <div class="connection-list-inline">
+        `;
+        connections.related_concepts
+            .sort((a, b) => b.strength - a.strength)
+            .slice(0, 5)  // Show top 5
+            .forEach(conn => {
+                const strengthClass = conn.strength >= 0.8 ? 'strength-high' : conn.strength >= 0.5 ? 'strength-medium' : 'strength-low';
+                connectionsHTML += `
+                    <div class="connection-item-inline ${strengthClass}">
+                        <span class="connection-param-clickable" onclick="displaySemantics('${conn.parameter}', true)">${conn.parameter}</span>
+                        <span class="connection-strength-badge">${(conn.strength * 100).toFixed(0)}%</span>
+                    </div>
+                `;
+            });
+        if (connections.related_concepts.length > 5) {
+            connectionsHTML += `<div class="connection-more">+${connections.related_concepts.length - 5} more</div>`;
+        }
+        connectionsHTML += `</div></div>`;
+    }
+
+    connectionsHTML += `</div>`;
+
+    // Append to existing content
+    modalContent.innerHTML += connectionsHTML;
 }
 
 /**

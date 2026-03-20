@@ -95,7 +95,7 @@ body {
 /* Main Content */
 .main-content {
     display: grid;
-    grid-template-columns: 350px 1fr 400px;
+    grid-template-columns: 350px 1fr;
     gap: 0;
     flex: 1;
     overflow: hidden;
@@ -1215,6 +1215,118 @@ body {
     font-family: 'Segoe UI', sans-serif;
     pointer-events: none;
     user-select: none;
+}
+
+/* Inline Connections in Semantics Modal */
+.semantic-connections {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 2px solid #e0e0e0;
+}
+
+.connections-header-inline {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.connections-header-inline h4 {
+    margin: 0;
+    color: #667eea;
+    font-size: 1.1rem;
+}
+
+.btn-view-graph-inline {
+    padding: 0.4rem 0.8rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    border-radius: 4px;
+    color: white;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.3s;
+}
+
+.btn-view-graph-inline:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+}
+
+.connection-section-inline {
+    margin-bottom: 1.5rem;
+}
+
+.connection-section-inline h5 {
+    margin: 0 0 0.75rem 0;
+    color: #555;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.connection-list-inline {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.connection-item-inline {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.8rem;
+    background: #f8f9fa;
+    border-radius: 16px;
+    border-left: 3px solid #667eea;
+    transition: all 0.2s;
+}
+
+.connection-item-inline:hover {
+    background: #e9ecef;
+    transform: translateX(2px);
+}
+
+.connection-item-inline.strength-high {
+    border-left-color: #28a745;
+}
+
+.connection-item-inline.strength-medium {
+    border-left-color: #ffc107;
+}
+
+.connection-item-inline.strength-low {
+    border-left-color: #6c757d;
+}
+
+.connection-param-clickable {
+    cursor: pointer;
+    color: #667eea;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.connection-param-clickable:hover {
+    color: #764ba2;
+    text-decoration: underline;
+}
+
+.connection-strength-badge {
+    font-size: 0.75rem;
+    color: #666;
+    background: #e9ecef;
+    padding: 0.2rem 0.4rem;
+    border-radius: 8px;
+}
+
+.connection-more {
+    padding: 0.4rem 0.8rem;
+    background: #e9ecef;
+    border-radius: 16px;
+    font-size: 0.85rem;
+    color: #666;
+    font-style: italic;
 }
 
 /* Responsive Design */
