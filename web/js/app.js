@@ -371,11 +371,12 @@ function displaySyntaxStructure(structure) {
         } else if (lineType === 'brace_open') {
             lineHTML = `<span class="syntax-brace">{</span>`;
         } else if (lineType === 'function_call') {
-            const funcMatch = syntaxText.match(/^([a-zA-Z_][a-zA-Z0-9_]*)\s*\((.*)\)\s*$/);
+            // Updated regex to handle spaces before parentheses (e.g., "slice_header( )")
+            const funcMatch = syntaxText.match(/^([a-zA-Z_][a-zA-Z0-9_]*)\s*\(\s*(.*?)\s*\)\s*$/);
             if (funcMatch) {
                 const funcName = funcMatch[1];
-                const args = funcMatch[2];
-                lineHTML = `<span class="syntax-function-call clickable-function" data-function="${funcName}" onclick="navigateToSyntaxStructure('${funcName}')" title="Click to view ${funcName} syntax">${funcName}</span><span class="syntax-paren">(</span> ${highlightCondition(args)} <span class="syntax-paren">)</span>`;
+                const args = funcMatch[2].trim();
+                lineHTML = `<span class="syntax-function-call clickable-function" data-function="${funcName}" onclick="navigateToSyntaxStructure('${funcName}')" title="Click to view ${funcName} syntax">${funcName}</span><span class="syntax-paren">(</span>${args ? ' ' + highlightCondition(args) + ' ' : ' '}<span class="syntax-paren">)</span>`;
             } else {
                 lineHTML = `<span class="syntax-function-call">${escapeHtml(syntaxText)}</span>`;
             }
@@ -1251,7 +1252,7 @@ Keep the explanation concise (3-5 paragraphs) and accessible.`;
                 'anthropic-version': '2023-06-01'
             },
             body: JSON.stringify({
-                model: 'claude-3-5-sonnet-20241022',
+                model: 'claude-sonnet-4-5-20250929',
                 max_tokens: 1024,
                 messages: [{
                     role: 'user',
