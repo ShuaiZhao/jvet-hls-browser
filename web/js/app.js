@@ -708,6 +708,27 @@ function goBackSemantics() {
     }
 }
 
+/**
+ * Logout and perform hard refresh
+ * Clears all session storage, local storage, cookies, and forces cache reload
+ */
+function logout() {
+    // Clear all session storage
+    sessionStorage.clear();
+
+    // Clear all local storage
+    localStorage.clear();
+
+    // Clear all cookies
+    document.cookie.split(";").forEach(function(c) {
+        document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+    });
+
+    // Force a hard refresh by reloading with cache bypass
+    // This clears browser cache for this page
+    window.location.href = window.location.href.split('?')[0] + '?t=' + new Date().getTime();
+}
+
 // Add click-outside-to-close for semantics modal
 document.getElementById('semanticsModal')?.addEventListener('click', (e) => {
     if (e.target.id === 'semanticsModal') {

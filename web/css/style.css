@@ -43,6 +43,12 @@ body {
     margin-right: 0.5rem;
 }
 
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
 .codec-selector select {
     padding: 0.5rem 1rem;
     border: none;
@@ -58,6 +64,32 @@ body {
 .codec-selector select:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.logout-btn {
+    padding: 0.5rem 1rem;
+    border: 2px solid white;
+    border-radius: 4px;
+    background: transparent;
+    color: white;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.logout-btn:hover {
+    background: white;
+    color: #667eea;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.logout-btn i {
+    font-size: 1rem;
 }
 
 /* Main Content */

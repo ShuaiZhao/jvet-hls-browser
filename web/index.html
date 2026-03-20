@@ -19,12 +19,17 @@
         <header class="app-header">
             <div class="header-content">
                 <h1><i class="fas fa-video"></i> Interactive HLS Specification Browser</h1>
-                <div class="codec-selector">
-                    <select id="codecSelect">
-                        <option value="vvc">VVC/H.266</option>
-                        <option value="hevc">HEVC/H.265</option>
-                        <option value="avc">AVC/H.264</option>
-                    </select>
+                <div class="header-actions">
+                    <div class="codec-selector">
+                        <select id="codecSelect">
+                            <option value="vvc">VVC/H.266</option>
+                            <option value="hevc">HEVC/H.265</option>
+                            <option value="avc">AVC/H.264</option>
+                        </select>
+                    </div>
+                    <button class="logout-btn" onclick="logout()" title="Logout & Hard Refresh">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </button>
                 </div>
             </div>
         </header>
