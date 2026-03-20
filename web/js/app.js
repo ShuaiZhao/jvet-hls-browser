@@ -1209,13 +1209,6 @@ async function aiExplainParameter() {
 
     currentAiParameter = paramName;
 
-    // Get API key
-    const apiKey = await getApiKey();
-    if (!apiKey) {
-        alert('Valid Claude API key is required for AI analysis');
-        return;
-    }
-
     // Show AI analysis container with loading state
     const aiContainer = document.getElementById('aiAnalysisContainer');
     const aiContent = document.getElementById('aiAnalysisContent');
@@ -1264,13 +1257,11 @@ Please explain:
 
 Keep the explanation concise (3-5 paragraphs) and accessible.`;
 
-        // Call Claude API
-        const response = await fetch('https://api.anthropic.com/v1/messages', {
+        // Call Claude API via local proxy server
+        const response = await fetch('http://localhost:5000/api/claude', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                'x-api-key': apiKey,
-                'anthropic-version': '2023-06-01'
+                'Content-Type': 'application/json'
             },
             body: JSON.stringify({
                 model: 'claude-sonnet-4-5-20250929',
@@ -1284,7 +1275,7 @@ Keep the explanation concise (3-5 paragraphs) and accessible.`;
 
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.error?.message || `API error: ${response.status}`);
+            throw new Error(errorData.error || `API error: ${response.status}`);
         }
 
         const data = await response.json();
@@ -1299,7 +1290,7 @@ Keep the explanation concise (3-5 paragraphs) and accessible.`;
             <div class="ai-analysis-error">
                 <strong>Error:</strong> ${error.message}
                 <br><br>
-                <small>Please check your API key and internet connection.</small>
+                <small>Make sure the proxy server is running: python server/proxy.py</small>
             </div>
         `;
     }
