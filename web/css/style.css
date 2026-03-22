@@ -963,6 +963,8 @@ body {
     margin-bottom: 1rem;
     padding-bottom: 0.75rem;
     border-bottom: 2px solid rgba(102, 126, 234, 0.3);
+    flex-wrap: wrap;
+    gap: 0.5rem;
 }
 
 .ai-analysis-header h3 {
@@ -976,6 +978,92 @@ body {
 
 .ai-analysis-header h3 i {
     font-size: 1.2rem;
+}
+
+.cache-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.cache-badge.cache-hit {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.cache-badge.cache-new {
+    background: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
+}
+
+.syntax-context-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    background: #e3f2fd;
+    color: #1565c0;
+    border: 1px solid #90caf9;
+}
+
+.syntax-context-badge i {
+    font-size: 0.85rem;
+}
+
+.syntax-context-indicator {
+    display: inline-block;
+    margin-left: 0.75rem;
+    padding: 0.25rem 0.75rem;
+    background: #f0f4ff;
+    color: #4a5568;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    font-family: monospace;
+    border: 1px solid #cbd5e0;
+}
+
+.analysis-timestamp {
+    font-size: 0.8rem;
+    color: #666;
+    font-style: italic;
+}
+
+.btn-rerun-analysis {
+    padding: 0.5rem 1rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s;
+}
+
+.btn-rerun-analysis:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.btn-rerun-analysis i {
+    font-size: 0.9rem;
+}
+
+.ai-analysis-text {
+    margin-top: 1rem;
 }
 
 .close-ai-btn {
@@ -1237,6 +1325,31 @@ body {
     font-size: 1.1rem;
 }
 
+.connection-legend {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.8rem;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: #666;
+}
+
+.legend-item.upstream {
+    color: #2196F3;
+}
+
+.legend-item.downstream {
+    color: #4CAF50;
+}
+
+.legend-item i {
+    font-size: 0.75rem;
+}
+
 .btn-view-graph-inline {
     padding: 0.4rem 0.8rem;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -1320,6 +1433,17 @@ body {
     border-radius: 8px;
 }
 
+/* Inline Connection Graph */
+.inline-connection-graph {
+    width: 100%;
+    height: 400px;
+    margin-top: 1rem;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #fafafa;
+}
+
 .connection-more {
     padding: 0.4rem 0.8rem;
     background: #e9ecef;
@@ -1351,3 +1475,233 @@ body {
         display: flex;
     }
 }
+
+/* Connection Tree Styles */
+.connection-tree-container {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-top: 1rem;
+}
+
+.connection-tree {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+}
+
+.tree-section {
+    width: 100%;
+    max-width: 600px;
+}
+
+.section-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #666;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.tree-nodes {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.related-nodes {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 0.5rem;
+}
+
+.tree-node {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
+    transition: all 0.2s;
+    position: relative;
+}
+
+.tree-node.clickable {
+    cursor: pointer;
+}
+
+.tree-node.clickable:hover {
+    transform: translateX(4px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.tree-node i {
+    font-size: 0.9rem;
+    flex-shrink: 0;
+}
+
+.node-name {
+    font-family: 'Courier New', monospace;
+    font-weight: 600;
+    font-size: 0.9rem;
+    flex: 1;
+}
+
+.node-context {
+    font-size: 0.75rem;
+    color: #666;
+    font-style: italic;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.node-badge {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 12px;
+    background: #fff;
+    color: #667eea;
+    font-weight: 600;
+    border: 1px solid #667eea;
+}
+
+/* Upstream nodes (Dependencies) */
+.upstream-node {
+    background: #e3f2fd;
+    border-left: 4px solid #2196F3;
+}
+
+.upstream-node:hover {
+    background: #bbdefb;
+    border-left-color: #1976d2;
+}
+
+.upstream-node i {
+    color: #2196F3;
+}
+
+.upstream-node .node-name {
+    color: #1565c0;
+}
+
+/* Root node (Current parameter) */
+.root-node {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 1rem 1.5rem;
+    font-size: 1.05rem;
+    justify-content: center;
+    border: none;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.root-node i {
+    color: #fff;
+    font-size: 0.8rem;
+}
+
+.root-node .node-name {
+    color: white;
+    font-size: 1rem;
+}
+
+/* Downstream nodes (References) */
+.downstream-node {
+    background: #e8f5e9;
+    border-left: 4px solid #4CAF50;
+}
+
+.downstream-node:hover {
+    background: #c8e6c9;
+    border-left-color: #388e3c;
+}
+
+.downstream-node i {
+    color: #4CAF50;
+}
+
+.downstream-node .node-name {
+    color: #2e7d32;
+}
+
+/* Related nodes */
+.related-node {
+    background: #fff3e0;
+    border-left: 4px solid #ff9800;
+}
+
+.related-node:hover {
+    background: #ffe0b2;
+    border-left-color: #f57c00;
+}
+
+.related-node i {
+    color: #ff9800;
+}
+
+.related-node .node-name {
+    color: #e65100;
+}
+
+/* Tree connectors */
+.tree-connector {
+    width: 2px;
+    height: 20px;
+    background: #ddd;
+    margin: 0 auto;
+    position: relative;
+}
+
+.upstream-connector::before,
+.downstream-connector::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.upstream-connector::before {
+    bottom: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-bottom: 8px solid #ddd;
+}
+
+.downstream-connector::before {
+    top: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 8px solid #ddd;
+}
+
+/* Section spacing */
+.upstream-section {
+    margin-bottom: 0;
+}
+
+.root-section {
+    margin: 0;
+    padding: 1rem 0;
+}
+
+.downstream-section {
+    margin-top: 0;
+}
+
+.related-section {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px dashed #ccc;
+}
+
+/* Empty state */
+.connection-tree .empty-state {
+    padding: 2rem;
+    text-align: center;
+    color: #999;
+}
+

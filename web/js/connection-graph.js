@@ -159,7 +159,7 @@ async function displayConnections(paramName) {
  */
 function navigateToParameter(paramName) {
     // Show semantics popup for the parameter
-    showParameterSemantics(paramName);
+    displaySemantics(paramName);
 }
 
 /**

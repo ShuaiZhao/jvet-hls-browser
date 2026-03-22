@@ -52,26 +52,38 @@ def load_codec_data(codec='vvc'):
     return data
 
 
-@app.route('/api/analyze-parameter', methods=['POST'])
+@app.route('/api/analyze-parameter', methods=['POST', 'OPTIONS'])
 def analyze_parameter():
     """Analyze a parameter using Claude in real-time."""
+    # Handle preflight request
+    if request.method == 'OPTIONS':
+        return '', 204
+
     if not client:
         return jsonify({'error': 'Claude API not configured'}), 500
 
-    data = request.json
-    codec = data.get('codec', 'vvc')
-    param_name = data.get('parameter')
+    try:
+        data = request.json
 
-    if not param_name:
-        return jsonify({'error': 'Parameter name required'}), 400
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
 
-    # Load codec data
-    codec_info = load_codec_data(codec)
+        codec = data.get('codec', 'vvc')
+        param_name = data.get('parameter')
 
-    if param_name not in codec_info['semantics']:
-        return jsonify({'error': 'Parameter not found'}), 404
+        if not param_name:
+            return jsonify({'error': 'Parameter name required'}), 400
 
-    param_info = codec_info['semantics'][param_name]
+        # Load codec data
+        codec_info = load_codec_data(codec)
+
+        if param_name not in codec_info['semantics']:
+            return jsonify({'error': 'Parameter not found'}), 404
+
+        param_info = codec_info['semantics'][param_name]
+    except Exception as e:
+        print(f"Error loading data: {e}")
+        return jsonify({'error': f'Failed to load codec data: {str(e)}'}), 500
 
     # Build prompt for Claude
     prompt = f"""You are analyzing the H.266/VVC video codec specification.
@@ -110,11 +122,12 @@ Return ONLY valid JSON (no markdown):
 }}"""
 
     try:
-        # Call Claude API
+        # Call Claude API with timeout
         response = client.messages.create(
             model="claude-sonnet-4-5-20250929",
             max_tokens=2000,
             temperature=0.3,
+            timeout=60.0,  # 60 second timeout
             messages=[{
                 "role": "user",
                 "content": prompt
@@ -169,26 +182,44 @@ Return ONLY valid JSON (no markdown):
             'analyzed_at': 'realtime'
         })
 
+    except json.JSONDecodeError as e:
+        print(f"JSON parsing error: {e}")
+        print(f"Response text: {response_text[:500]}")
+        return jsonify({'error': 'Failed to parse Claude response'}), 500
     except Exception as e:
         print(f"Error analyzing parameter: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 
-@app.route('/api/search', methods=['POST'])
+@app.route('/api/search', methods=['POST', 'OPTIONS'])
 def semantic_search():
     """Search for parameters using Claude."""
+    # Handle preflight request
+    if request.method == 'OPTIONS':
+        return '', 204
+
     if not client:
         return jsonify({'error': 'Claude API not configured'}), 500
 
-    data = request.json
-    codec = data.get('codec', 'vvc')
-    query = data.get('query')
+    try:
+        data = request.json
 
-    if not query:
-        return jsonify({'error': 'Query required'}), 400
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
 
-    # Load codec data
-    codec_info = load_codec_data(codec)
+        codec = data.get('codec', 'vvc')
+        query = data.get('query')
+
+        if not query:
+            return jsonify({'error': 'Query required'}), 400
+
+        # Load codec data
+        codec_info = load_codec_data(codec)
+    except Exception as e:
+        print(f"Error loading search data: {e}")
+        return jsonify({'error': f'Failed to load data: {str(e)}'}), 500
 
     # Build search prompt
     prompt = f"""You are searching the H.266/VVC video codec specification.
@@ -216,6 +247,7 @@ Return ONLY valid JSON (no markdown):
             model="claude-sonnet-4-5-20250929",
             max_tokens=1500,
             temperature=0.3,
+            timeout=60.0,  # 60 second timeout
             messages=[{
                 "role": "user",
                 "content": prompt
@@ -234,8 +266,13 @@ Return ONLY valid JSON (no markdown):
 
         return jsonify(results)
 
+    except json.JSONDecodeError as e:
+        print(f"JSON parsing error in search: {e}")
+        return jsonify({'error': 'Failed to parse search results'}), 500
     except Exception as e:
         print(f"Error searching: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 
@@ -256,6 +293,14 @@ if __name__ == '__main__':
     print(f"Data directory: {DATA_DIR}")
     print()
     print("Starting server on http://localhost:5000")
+    print("\nPress CTRL+C to stop the server")
     print("=" * 60)
 
-    app.run(debug=True, port=5000)
+    # Production-ready configuration
+    app.run(
+        host='0.0.0.0',
+        port=5000,
+        debug=False,  # Disable debug mode for stability
+        threaded=True,  # Handle multiple requests
+        use_reloader=False  # Prevent auto-restart
+    )

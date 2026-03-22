@@ -7,9 +7,10 @@
 let currentCodec = 'vvc';
 let syntaxData = {};
 let semanticsData = {};
-let connectionsData = {};
+// connectionsData is declared in connection-graph.js
 let currentStructure = null;
 let currentParameter = null;
+let currentSemanticsContext = null; // Syntax structure context for currently displayed semantics
 let semanticsHistory = []; // History stack for back button
 
 // Initialize application
@@ -455,16 +456,37 @@ function highlightCondition(text) {
 function selectParameter(paramName) {
     currentParameter = paramName;
 
-    // Display semantics (connections are automatically added inside)
-    displaySemantics(paramName);
+    // Display semantics with current syntax structure context
+    console.log('[selectParameter] Parameter:', paramName, 'Syntax Context:', currentStructure);
+    displaySemantics(paramName, true, currentStructure);
 }
 
 /**
  * Display parameter semantics
  * @param {string} paramName - The parameter name to display semantics for
  * @param {boolean} pushToHistory - Whether to push current param to history (default true)
+ * @param {string} syntaxContext - The syntax structure name this parameter belongs to (optional)
  */
-function displaySemantics(paramName, pushToHistory = true) {
+function displaySemantics(paramName, pushToHistory = true, syntaxContext = null) {
+    // IMPORTANT: Clear any previous AI analysis when switching parameters
+    const aiContainer = document.getElementById('aiAnalysisContainer');
+    if (aiContainer) {
+        aiContainer.style.display = 'none';
+        const aiContent = document.getElementById('aiAnalysisContent');
+        if (aiContent) {
+            aiContent.innerHTML = '';
+        }
+    }
+
+    // Store the syntax context for AI analysis
+    // If no context provided, preserve the current one (for related parameter navigation)
+    console.log('[displaySemantics] Param:', paramName, 'New Context:', syntaxContext, 'Current Context Before:', currentSemanticsContext);
+    if (syntaxContext !== null) {
+        currentSemanticsContext = syntaxContext;
+    }
+    console.log('[displaySemantics] Current Context After:', currentSemanticsContext);
+    // If currentSemanticsContext is still null, keep it null (no context available)
+
     // Get current parameter from modal title if we're pushing to history
     if (pushToHistory) {
         const currentParam = document.getElementById('semanticsModalTitle')?.textContent;
@@ -577,6 +599,21 @@ function displaySemantics(paramName, pushToHistory = true) {
     }
 
     modalTitle.textContent = matchType === 'related' ? paramName : displayName;
+
+    // Add syntax context indicator to modal header if available
+    const modalHeader = modalTitle.parentElement;
+    let contextIndicator = modalHeader.querySelector('.syntax-context-indicator');
+    if (currentSemanticsContext) {
+        if (!contextIndicator) {
+            contextIndicator = document.createElement('div');
+            contextIndicator.className = 'syntax-context-indicator';
+            modalHeader.appendChild(contextIndicator);
+        }
+        contextIndicator.textContent = `in ${currentSemanticsContext}`;
+        contextIndicator.style.display = 'block';
+    } else if (contextIndicator) {
+        contextIndicator.style.display = 'none';
+    }
 
     let html = `
         <div class="semantic-content">`;
@@ -701,95 +738,156 @@ async function addConnectionsToModal(paramName) {
 
     const connections = connectionsData[paramName];
 
-    let connectionsHTML = `
+    // Build connection tree structure
+    const upstreamConnections = [];
+    const downstreamConnections = [];
+
+    // Upstream: Dependencies (what this parameter depends on)
+    if (connections.dependencies && connections.dependencies.length > 0) {
+        connections.dependencies.forEach(dep => {
+            upstreamConnections.push({
+                name: dep.parameter,
+                type: 'dependency',
+                context: dep.context || 'Depends on',
+                strength: dep.strength || 0.8
+            });
+        });
+    }
+
+    // Downstream: References (what depends on/references this parameter)
+    if (connections.references && connections.references.length > 0) {
+        connections.references.forEach(ref => {
+            downstreamConnections.push({
+                name: ref.parameter,
+                type: 'reference',
+                context: ref.context || 'Referenced by',
+                strength: ref.strength || 0.8
+            });
+        });
+    }
+
+    // Related concepts (shown separately, not in tree)
+    const relatedConnections = connections.related_concepts || [];
+
+    // Create tree HTML
+    const connectionsHTML = `
         <div class="semantic-connections">
             <div class="connections-header-inline">
-                <h4><i class="fas fa-project-diagram"></i> Parameter Connections</h4>
-                <button class="btn-view-graph-inline" onclick="showConnectionGraph('${paramName}')">
-                    <i class="fas fa-share-alt"></i> View Graph
-                </button>
+                <h4><i class="fas fa-sitemap"></i> Parameter Connections</h4>
+                <div class="connection-legend">
+                    <span class="legend-item upstream"><i class="fas fa-arrow-up"></i> Upstream (Dependencies)</span>
+                    <span class="legend-item downstream"><i class="fas fa-arrow-down"></i> Downstream (References)</span>
+                </div>
             </div>
+            <div id="connectionTreeContainer" class="connection-tree-container">
+                ${buildConnectionTree(paramName, upstreamConnections, downstreamConnections, relatedConnections)}
+            </div>
+        </div>
     `;
-
-    // Dependencies
-    if (connections.dependencies && connections.dependencies.length > 0) {
-        connectionsHTML += `
-            <div class="connection-section-inline">
-                <h5><i class="fas fa-arrow-left"></i> Dependencies (${connections.dependencies.length})</h5>
-                <div class="connection-list-inline">
-        `;
-        connections.dependencies
-            .sort((a, b) => b.strength - a.strength)
-            .slice(0, 5)  // Show top 5
-            .forEach(conn => {
-                const strengthClass = conn.strength >= 0.8 ? 'strength-high' : conn.strength >= 0.5 ? 'strength-medium' : 'strength-low';
-                connectionsHTML += `
-                    <div class="connection-item-inline ${strengthClass}">
-                        <span class="connection-param-clickable" onclick="displaySemantics('${conn.parameter}', true)">${conn.parameter}</span>
-                        <span class="connection-strength-badge">${(conn.strength * 100).toFixed(0)}%</span>
-                    </div>
-                `;
-            });
-        if (connections.dependencies.length > 5) {
-            connectionsHTML += `<div class="connection-more">+${connections.dependencies.length - 5} more</div>`;
-        }
-        connectionsHTML += `</div></div>`;
-    }
-
-    // References
-    if (connections.references && connections.references.length > 0) {
-        connectionsHTML += `
-            <div class="connection-section-inline">
-                <h5><i class="fas fa-arrow-right"></i> References (${connections.references.length})</h5>
-                <div class="connection-list-inline">
-        `;
-        connections.references
-            .sort((a, b) => b.strength - a.strength)
-            .slice(0, 5)  // Show top 5
-            .forEach(conn => {
-                const strengthClass = conn.strength >= 0.8 ? 'strength-high' : conn.strength >= 0.5 ? 'strength-medium' : 'strength-low';
-                connectionsHTML += `
-                    <div class="connection-item-inline ${strengthClass}">
-                        <span class="connection-param-clickable" onclick="displaySemantics('${conn.parameter}', true)">${conn.parameter}</span>
-                        <span class="connection-strength-badge">${(conn.strength * 100).toFixed(0)}%</span>
-                    </div>
-                `;
-            });
-        if (connections.references.length > 5) {
-            connectionsHTML += `<div class="connection-more">+${connections.references.length - 5} more</div>`;
-        }
-        connectionsHTML += `</div></div>`;
-    }
-
-    // Related Concepts
-    if (connections.related_concepts && connections.related_concepts.length > 0) {
-        connectionsHTML += `
-            <div class="connection-section-inline">
-                <h5><i class="fas fa-link"></i> Related Concepts (${connections.related_concepts.length})</h5>
-                <div class="connection-list-inline">
-        `;
-        connections.related_concepts
-            .sort((a, b) => b.strength - a.strength)
-            .slice(0, 5)  // Show top 5
-            .forEach(conn => {
-                const strengthClass = conn.strength >= 0.8 ? 'strength-high' : conn.strength >= 0.5 ? 'strength-medium' : 'strength-low';
-                connectionsHTML += `
-                    <div class="connection-item-inline ${strengthClass}">
-                        <span class="connection-param-clickable" onclick="displaySemantics('${conn.parameter}', true)">${conn.parameter}</span>
-                        <span class="connection-strength-badge">${(conn.strength * 100).toFixed(0)}%</span>
-                    </div>
-                `;
-            });
-        if (connections.related_concepts.length > 5) {
-            connectionsHTML += `<div class="connection-more">+${connections.related_concepts.length - 5} more</div>`;
-        }
-        connectionsHTML += `</div></div>`;
-    }
-
-    connectionsHTML += `</div>`;
 
     // Append to existing content
     modalContent.innerHTML += connectionsHTML;
+}
+
+/**
+ * Build HTML for connection tree
+ */
+function buildConnectionTree(rootParam, upstream, downstream, related) {
+    let html = '<div class="connection-tree">';
+
+    // Upstream connections (Dependencies)
+    if (upstream.length > 0) {
+        html += '<div class="tree-section upstream-section">';
+        html += '<div class="section-label"><i class="fas fa-level-up-alt"></i> Upstream Dependencies</div>';
+        html += '<div class="tree-nodes">';
+        upstream.forEach(conn => {
+            html += `
+                <div class="tree-node upstream-node clickable"
+                     onclick="navigateToParameter('${conn.name}')"
+                     title="${conn.context}">
+                    <i class="fas fa-arrow-right"></i>
+                    <span class="node-name">${conn.name}</span>
+                    <span class="node-context">${conn.context}</span>
+                </div>
+            `;
+        });
+        html += '</div>';
+        html += '</div>';
+
+        // Connection line
+        html += '<div class="tree-connector upstream-connector"></div>';
+    }
+
+    // Root parameter (current)
+    html += `
+        <div class="tree-section root-section">
+            <div class="tree-node root-node">
+                <i class="fas fa-circle"></i>
+                <span class="node-name">${rootParam}</span>
+                <span class="node-badge">Current Parameter</span>
+            </div>
+        </div>
+    `;
+
+    // Downstream connections (References)
+    if (downstream.length > 0) {
+        // Connection line
+        html += '<div class="tree-connector downstream-connector"></div>';
+
+        html += '<div class="tree-section downstream-section">';
+        html += '<div class="section-label"><i class="fas fa-level-down-alt"></i> Downstream References</div>';
+        html += '<div class="tree-nodes">';
+        downstream.forEach(conn => {
+            html += `
+                <div class="tree-node downstream-node clickable"
+                     onclick="navigateToParameter('${conn.name}')"
+                     title="${conn.context}">
+                    <i class="fas fa-arrow-right"></i>
+                    <span class="node-name">${conn.name}</span>
+                    <span class="node-context">${conn.context}</span>
+                </div>
+            `;
+        });
+        html += '</div>';
+        html += '</div>';
+    }
+
+    // Related concepts (if any)
+    if (related.length > 0) {
+        html += '<div class="tree-section related-section">';
+        html += '<div class="section-label"><i class="fas fa-link"></i> Related Concepts</div>';
+        html += '<div class="tree-nodes related-nodes">';
+        related.forEach(conn => {
+            html += `
+                <div class="tree-node related-node clickable"
+                     onclick="navigateToParameter('${conn.parameter}')"
+                     title="${conn.context || 'Related concept'}">
+                    <i class="fas fa-arrow-right"></i>
+                    <span class="node-name">${conn.parameter}</span>
+                    <span class="node-context">${conn.context || 'Related'}</span>
+                </div>
+            `;
+        });
+        html += '</div>';
+        html += '</div>';
+    }
+
+    // Show message if no connections
+    if (upstream.length === 0 && downstream.length === 0 && related.length === 0) {
+        html += '<div class="empty-state"><p>No connections found for this parameter</p></div>';
+    }
+
+    html += '</div>';
+    return html;
+}
+
+/**
+ * Navigate to a parameter from connection tree
+ */
+function navigateToParameter(paramName) {
+    console.log('[navigateToParameter] Navigating to:', paramName, 'Context:', currentSemanticsContext);
+    // Display semantics with history tracking
+    displaySemantics(paramName, true);
 }
 
 /**
@@ -798,8 +896,9 @@ async function addConnectionsToModal(paramName) {
 function closeSemanticsModal() {
     const modal = document.getElementById('semanticsModal');
     modal.classList.remove('active');
-    // Clear history when closing modal
+    // Clear history and context when closing modal
     semanticsHistory = [];
+    currentSemanticsContext = null;
 }
 
 /**
@@ -1184,7 +1283,44 @@ async function getApiKey() {
     return apiKey;
 }
 
-async function aiExplainParameter() {
+// AI Analysis Cache Functions
+function getAiCacheKey(paramName, syntaxContext = '') {
+    // Include syntax context to make cache specific to each syntax structure
+    const contextKey = syntaxContext ? `_${syntaxContext}` : '';
+    return `ai_analysis_${currentCodec}${contextKey}_${paramName}`;
+}
+
+function loadCachedAnalysis(paramName, syntaxContext = '') {
+    const cacheKey = getAiCacheKey(paramName, syntaxContext);
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) {
+        try {
+            return JSON.parse(cached);
+        } catch (e) {
+            console.error('Error parsing cached analysis:', e);
+            return null;
+        }
+    }
+    return null;
+}
+
+function saveCachedAnalysis(paramName, syntaxContext, explanation) {
+    const cacheKey = getAiCacheKey(paramName, syntaxContext);
+    const cacheData = {
+        explanation: explanation,
+        timestamp: new Date().toISOString(),
+        codec: currentCodec,
+        syntaxContext: syntaxContext
+    };
+    console.log('[saveCachedAnalysis] Saving cache with key:', cacheKey, 'Context:', syntaxContext);
+    try {
+        localStorage.setItem(cacheKey, JSON.stringify(cacheData));
+    } catch (e) {
+        console.error('Error saving to cache:', e);
+    }
+}
+
+async function aiExplainParameter(forceRefresh = false) {
     const paramName = document.getElementById('semanticsModalTitle').textContent;
 
     if (!paramName || paramName === 'Semantics') {
@@ -1194,37 +1330,46 @@ async function aiExplainParameter() {
 
     currentAiParameter = paramName;
 
-    // Show AI analysis container with loading state
+    // Show AI analysis container
     const aiContainer = document.getElementById('aiAnalysisContainer');
     const aiContent = document.getElementById('aiAnalysisContent');
 
     aiContainer.style.display = 'block';
+
+    // Show loading state early to give user feedback
     aiContent.innerHTML = '<div class="ai-analysis-loading"><i class="fas fa-robot fa-spin"></i><p>Analyzing parameter...</p></div>';
+
+    // Get parameter semantics and syntax context
+    const semantics = semanticsData[paramName] || {};
+    const definition = semantics.definition || 'No definition available';
+    const constraints = semantics.constraints || [];
+    const relatedParams = semantics.related_parameters || [];
+
+    // Use the current semantics context (which syntax structure the user is viewing)
+    const syntaxContext = currentSemanticsContext || '';
+    console.log('[aiExplainParameter] Param:', paramName, 'Syntax Context:', syntaxContext, 'Force Refresh:', forceRefresh);
+
+    // Check cache first (unless force refresh) - now syntax-specific
+    if (!forceRefresh) {
+        const cached = loadCachedAnalysis(paramName, syntaxContext);
+        console.log('[aiExplainParameter] Cache lookup:', cached ? 'HIT' : 'MISS', 'Cache Key:', getAiCacheKey(paramName, syntaxContext));
+        if (cached) {
+            console.log('[aiExplainParameter] Using cached analysis from context:', cached.syntaxContext);
+            displayAiAnalysis(cached.explanation, cached.timestamp, true, cached.syntaxContext);
+            return;
+        }
+    }
 
     // Scroll to AI analysis
     aiContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
     try {
-        // Get parameter semantics and syntax context
-        const semantics = semanticsData[paramName] || {};
-        const definition = semantics.definition || 'No definition available';
-        const constraints = semantics.constraints || [];
-        const relatedParams = semantics.related_parameters || [];
-
-        // Find syntax structure containing this parameter
-        let syntaxContext = '';
-        for (const [structName, struct] of Object.entries(syntaxData)) {
-            if (struct.parameters && struct.parameters.some(p =>
-                typeof p === 'object' && p.name && p.name.includes(paramName))) {
-                syntaxContext = structName;
-                break;
-            }
-        }
 
         // Build prompt for Claude
         const prompt = `You are an expert in H.266/VVC video codec specification. Please provide a clear, easy-to-understand explanation of the following parameter for someone learning about VVC.
 
 Parameter: ${paramName}
+${syntaxContext ? `Context: This parameter appears in the "${syntaxContext}" syntax structure.` : ''}
 
 Specification Definition: ${definition}
 
@@ -1232,18 +1377,16 @@ Constraints: ${constraints.length > 0 ? constraints.join(', ') : 'None specified
 
 Related Parameters: ${relatedParams.length > 0 ? relatedParams.join(', ') : 'None specified'}
 
-${syntaxContext ? `Syntax Context: ${syntaxContext}` : ''}
-
 Please explain:
 1. What this parameter does in simple terms
-2. When and why it's used in video encoding/decoding
+2. ${syntaxContext ? `How it's specifically used in the ${syntaxContext} context` : 'When and why it\'s used in video encoding/decoding'}
 3. Its practical impact on video quality or bitstream
 4. How it relates to other VVC features (if applicable)
 
 Keep the explanation concise (3-5 paragraphs) and accessible.`;
 
-        // Call Claude API via local proxy server
-        const response = await fetch('http://localhost:5000/api/claude', {
+        // Call Claude API via local proxy server (same port as web server)
+        const response = await fetch('/api/claude', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -1266,8 +1409,11 @@ Keep the explanation concise (3-5 paragraphs) and accessible.`;
         const data = await response.json();
         const explanation = data.content[0].text;
 
+        // Save to cache with syntax context
+        saveCachedAnalysis(paramName, syntaxContext, explanation);
+
         // Display the AI analysis
-        displayAiAnalysis(explanation);
+        displayAiAnalysis(explanation, new Date().toISOString(), false, syntaxContext);
 
     } catch (error) {
         console.error('AI analysis error:', error);
@@ -1281,7 +1427,7 @@ Keep the explanation concise (3-5 paragraphs) and accessible.`;
     }
 }
 
-function displayAiAnalysis(explanation) {
+function displayAiAnalysis(explanation, timestamp, isFromCache, syntaxContext = '') {
     const aiContent = document.getElementById('aiAnalysisContent');
 
     // Convert markdown-style formatting to HTML
@@ -1299,7 +1445,41 @@ function displayAiAnalysis(explanation) {
     // Handle numbered lists
     html = html.replace(/(\d+)\.\s+/g, '<br>$1. ');
 
-    aiContent.innerHTML = html;
+    // Add cache status and re-run button
+    const cacheDate = new Date(timestamp);
+    const formattedDate = cacheDate.toLocaleString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+
+    const cacheStatus = isFromCache
+        ? `<span class="cache-badge cache-hit"><i class="fas fa-check-circle"></i> Loaded from cache</span>`
+        : `<span class="cache-badge cache-new"><i class="fas fa-sparkles"></i> Freshly generated</span>`;
+
+    const contextBadge = syntaxContext
+        ? `<span class="syntax-context-badge"><i class="fas fa-code"></i> ${syntaxContext}</span>`
+        : '';
+
+    const rerunButton = `
+        <button class="btn-rerun-analysis" onclick="aiExplainParameter(true)" title="Re-run AI analysis">
+            <i class="fas fa-sync-alt"></i> Re-run Analysis
+        </button>
+    `;
+
+    aiContent.innerHTML = `
+        <div class="ai-analysis-header">
+            ${cacheStatus}
+            ${contextBadge}
+            <span class="analysis-timestamp">${formattedDate}</span>
+            ${rerunButton}
+        </div>
+        <div class="ai-analysis-text">
+            ${html}
+        </div>
+    `;
 }
 
 function closeAiAnalysis() {
