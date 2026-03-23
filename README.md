@@ -4,7 +4,7 @@
 
 [![Python](https://img.shields.io/badge/Python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![Claude](https://img.shields.io/badge/AI-Claude%20Sonnet%204.5-purple.svg)](https://www.anthropic.com/claude)
-[![D3.js](https://img.shields.io/badge/D3.js-v7-orange.svg)](https://d3js.org/)
+[![JavaScript](https://img.shields.io/badge/JavaScript-ES6+-yellow.svg)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
 [![License](https://img.shields.io/badge/License-Educational-green.svg)](LICENSE)
 
 ---
@@ -67,11 +67,12 @@ Visit: **[https://shuaizhao.github.io/jvet-hls-browser/web/](https://shuaizhao.g
   - **Dependencies**: Conditional relationships
   - **Related Concepts**: Similar naming/purpose
 
-### Connection Graph Visualization
-- Interactive D3.js force-directed graphs
-- Color-coded nodes and edges
-- Drag, zoom, and click to explore
-- Visual connection strength indicators
+### Connection Visualization
+- **Hierarchical Tree View**: Simple, intuitive tree showing immediate upstream/downstream connections
+- **Color-coded nodes**: Blue (dependencies), Purple (current), Green (references), Orange (related)
+- **Clickable navigation**: Click any node to navigate to that parameter
+- **Back button support**: Navigate through parameter history
+- Replaces complex D3.js graph with clearer hierarchical structure
 
 ### Multi-Codec Support
 - H.266/VVC (complete)
@@ -126,7 +127,19 @@ python scripts/generate_connections_simple.py vvc
 Output:
 - `data/vvc/connections.json` - All parameter relationships
 
-### 5. Open Web Interface
+### 5. Start Server
+
+**Recommended: Combined Server** (serves web files + handles AI API):
+
+```bash
+./RUN_SERVER.sh  # macOS/Linux
+# or
+RUN_SERVER.bat   # Windows
+# or
+python server/combined_server.py
+```
+
+**Alternative: Simple HTTP Server** (static files only):
 
 ```bash
 cd web
@@ -136,6 +149,38 @@ python -m http.server 8000
 Open browser to: **http://localhost:8000**
 
 Done! Browse your interactive specification.
+
+---
+
+## Server Configuration
+
+### Combined Server (Recommended)
+
+We provide a **single combined server** on port 8000 that handles everything:
+- ✅ Serves static web files (HTML/CSS/JS)
+- ✅ Handles Claude AI proxy requests
+- ✅ No CORS issues
+- ✅ Auto-restart on crash
+- ✅ Production-ready configuration
+
+**Quick Start:**
+```bash
+./RUN_SERVER.sh  # macOS/Linux
+# or
+RUN_SERVER.bat   # Windows
+```
+
+**Manual Start:**
+```bash
+python server/combined_server.py
+```
+
+**Features:**
+- Stable server configuration (debug=False, threaded support)
+- 60-second timeout for Claude API calls
+- Comprehensive error handling
+- API key validation
+- Access at **http://localhost:8000**
 
 ---
 
@@ -400,13 +445,15 @@ Open: **http://localhost:8000**
      - Valid values and meanings
    - **Related Parameters**: Cross-references
 
-3. **Connections Tab** shows:
-   - **Inline Connection Graph**: Interactive D3.js visualization
+3. **Parameter Connections** shows:
+   - **Hierarchical Tree View**: Clear visualization of immediate connections
    - **Color-coded nodes**:
-     - Pink: Root (selected parameter)
-     - Purple: Level 1 connections
-     - Blue: Level 2 connections
-   - **Edge types**: References, Dependencies, Related
+     - Blue: Upstream dependencies (what this parameter depends on)
+     - Purple: Current parameter (root)
+     - Green: Downstream references (what depends on this parameter)
+     - Orange: Related concepts
+   - **Clickable nodes**: Click any connection to navigate to that parameter
+   - **Visual connectors**: Arrows showing connection flow direction
 
 4. **AI Explain Tab** (optional):
    - Click robot icon for AI-powered explanation
@@ -414,30 +461,43 @@ Open: **http://localhost:8000**
    - Cached per syntax structure
    - Visual indicators: cache status, timestamp
 
-### Understanding the Connection Graph
+### Understanding the Connection Tree
+
+**Tree Structure:**
+```
+[Upstream Dependencies] (Blue)
+        ↓
+[Current Parameter] (Purple)
+        ↓
+[Downstream References] (Green)
+
+[Related Concepts] (Orange - separate section)
+```
 
 **Node Colors:**
-- **Pink**: Root node (the parameter you clicked)
-- **Purple**: Direct connections (level 1)
-- **Blue**: Secondary connections (level 2)
-
-**Edge Types:**
-- **Solid**: Strong relationship
-- **Dashed**: Weak relationship
+- **Blue**: Upstream dependencies (what this parameter depends on)
+- **Purple**: Root node (the parameter you clicked)
+- **Green**: Downstream references (what depends on/references this parameter)
+- **Orange**: Related concepts (similar parameters)
 
 **Interactions:**
-- **Drag nodes**: Rearrange the graph
-- **Click node**: Navigate to that parameter
-- **Zoom**: Mouse wheel or pinch gesture
-- **Pan**: Click and drag background
+- **Click node**: Navigate to that parameter with history tracking
+- **Hover**: Shows context information for each connection
+- **Back button**: Return to previous parameter in history
 
 **Connection Types:**
-- **References**: Parameter A references Parameter B in its definition
+- **Upstream Dependencies**: What this parameter depends on
+  - Example: `sps_seq_parameter_set_id` depends on being in range 0..15
+- **Downstream References**: What depends on or references this parameter
   - Example: `pps_seq_parameter_set_id` references `sps_seq_parameter_set_id`
-- **Dependencies**: Parameter A depends on Parameter B's value
-  - Example: `separate_colour_plane_flag` depends on `sps_chroma_format_idc == 3`
 - **Related Concepts**: Parameters with similar naming or purpose
   - Example: `sps_max_width` ~ `sps_max_height`
+
+**Benefits of Tree View:**
+- Clear visualization of immediate connections only
+- No complex graph layouts to interpret
+- Easy navigation with clickable nodes
+- Better performance (no D3.js calculations)
 
 ### Navigation Features
 
@@ -525,9 +585,9 @@ Everything is instant (no API calls!)
 | Technology | Purpose | Version |
 |-----------|---------|---------|
 | **Vanilla JavaScript** | Application logic | ES6+ |
-| **D3.js** | Graph visualization | v7 |
 | **HTML5/CSS3** | Structure & styling | Latest |
 | **Font Awesome** | Icons | 6.4.0 |
+| **Pure CSS** | Tree visualization | CSS3 Grid/Flexbox |
 
 #### AI Integration
 
@@ -1202,6 +1262,51 @@ python -c "import anthropic; print('OK')"
 python scripts/verify_semantics_mapping.py
 ```
 
+#### 10. AI Analysis Showing Wrong Context
+
+**Problem:** AI analysis from one syntax structure appears when viewing parameter in different syntax
+
+**Cause:** AI analysis cache not being cleared when switching parameters
+
+**Solution:**
+
+1. **Clear AI cache** in browser console (F12):
+```javascript
+// Clear all AI analysis cache
+Object.keys(localStorage)
+  .filter(k => k.startsWith('ai_analysis_'))
+  .forEach(k => localStorage.removeItem(k));
+console.log('Cleared all AI analysis cache');
+location.reload();
+```
+
+2. **Hard refresh browser**: Cmd+Shift+R (Mac) or Ctrl+Shift+R (Windows)
+
+3. **Check cache keys** are correct:
+```javascript
+// View all cached analyses
+Object.keys(localStorage)
+  .filter(k => k.startsWith('ai_analysis_'))
+  .forEach(key => {
+    const data = JSON.parse(localStorage.getItem(key));
+    console.log('Key:', key);
+    console.log('Context:', data.syntaxContext);
+    console.log('---');
+  });
+```
+
+**Expected behavior:**
+- Each syntax structure has independent AI analysis cache
+- Cache keys include syntax context: `ai_analysis_{codec}_{syntaxContext}_{paramName}`
+- Old AI analysis is cleared when switching parameters
+- Context indicator shows which syntax structure you're viewing
+
+**Debug steps:**
+1. Open browser console (F12)
+2. Watch for logs like: `[aiExplainParameter] Cache Key: ai_analysis_vvc_seq_parameter_set_rbsp_sps_seq_parameter_set_id`
+3. Verify cache key includes the current syntax structure name
+4. If cache key is missing context, report the issue
+
 ### Debug Commands
 
 ```bash
@@ -1255,8 +1360,8 @@ interactive-hls/
 │   │
 │   ├── js/
 │   │   ├── app.js               # Core application logic (1200+ lines)
-│   │   ├── connection-graph.js  # D3.js graph visualization
-│   │   └── connection-tree.js   # Tree view (legacy)
+│   │   ├── connection-graph.js  # Connection data loading
+│   │   └── connection-tree.js   # Tree view (alternative visualization)
 │   │
 │   ├── data/                    # Static data files
 │   │   ├── vvc/
@@ -1479,14 +1584,31 @@ Special thanks to:
 
 ---
 
+## Technical Documentation
+
+For developers and contributors, additional technical documentation is available:
+
+- **[CONNECTION_TREE_FEATURE.md](CONNECTION_TREE_FEATURE.md)**: Detailed documentation of the connection tree visualization feature
+  - Tree structure and design
+  - Implementation details
+  - Technical specifications
+  - Migration notes from D3.js graph
+
+- **[AI_CACHE_FIX.md](AI_CACHE_FIX.md)**: AI analysis caching system documentation
+  - Cache structure and key generation
+  - Context-specific caching implementation
+  - Testing procedures
+  - Cache management commands
+
+---
+
 ## Support & Contact
 
 ### Documentation
 
 - **This README**: Complete setup and usage guide
-- **QUICKSTART.md**: 5-minute quick start
-- **GETTING_STARTED.md**: Detailed setup guide
-- **PROGRESS.md**: Development status and history
+- **CONNECTION_TREE_FEATURE.md**: Connection tree feature documentation
+- **AI_CACHE_FIX.md**: AI analysis caching system
 
 ### Getting Help
 
